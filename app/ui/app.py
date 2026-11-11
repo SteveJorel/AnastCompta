@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from app.services import auth_service as auth
-from app.ui.auth_views import CreateAccountView, LoginView, RecoveryView, MainView
+from app.ui.auth_views import CreateAccountView, LoginView, RecoveryView
+from app.ui.main_window import MainWindow
 
 
 class App(tk.Tk):
@@ -11,31 +12,34 @@ class App(tk.Tk):
         self.conn = conn
         self.throttle = auth.LoginThrottle()
         self.title("AnastCompta")
-        self.geometry("460x600")
-        ttk.Style().configure(".", font=("Segoe UI", 11))
+        style = ttk.Style()
+        style.configure(".", font=("Segoe UI", 11))
+        style.configure("Toolbutton", padding=(10, 8))
         self._current = None
         if auth.user_exists(conn):
             self.show_login()
         else:
             self.show_create_account()
 
-    def _show(self, view_class):
+    def _show(self, view_class, size, minsize):
         if self._current is not None:
             self._current.destroy()
+        self.geometry(size)
+        self.minsize(*minsize)
         self._current = view_class(self)
         self._current.pack(fill="both", expand=True)
 
     def show_create_account(self):
-        self._show(CreateAccountView)
+        self._show(CreateAccountView, "460x600", (460, 600))
 
     def show_login(self):
-        self._show(LoginView)
+        self._show(LoginView, "460x600", (460, 600))
 
     def show_recovery(self):
-        self._show(RecoveryView)
+        self._show(RecoveryView, "460x600", (460, 600))
 
     def show_main(self):
-        self._show(MainView)
+        self._show(MainWindow, "1150x700", (950, 600))
 
     def show_recovery_code(self, code, renewed=False):
         self.clipboard_clear()

@@ -24,7 +24,8 @@ class ClosureTab(ttk.Frame):
     def __init__(self, parent, conn, on_saved):
         super().__init__(parent, padding=10)
         self.conn, self.on_saved = conn, on_saved
-        self.rows, self.date_iso, self._total = [], today_iso(), 0
+        self.rows, self.date_iso = [], today_iso()
+        self._syncing = False
 
         top = ttk.Frame(self)
         top.pack(fill="x")
@@ -34,6 +35,11 @@ class ClosureTab(ttk.Frame):
         ttk.Button(top, text="Charger", command=self.load).pack(side="left")
         self.status = ttk.Label(top, text="")
         self.status.pack(side="left", padx=15)
+        ttk.Label(
+            self,
+            text="Pour chaque produit, saisissez la quantité vendue OU la quantité restante : "
+                 "l'autre se calcule automatiquement.",
+        ).pack(anchor="w", pady=(8, 0))
 
         self.scroll = ScrollableFrame(self)
         self.scroll.pack(fill="both", expand=True, pady=10)
@@ -71,24 +77,34 @@ class ClosureTab(ttk.Frame):
         for child in inner.winfo_children():
             child.destroy()
         self.rows = []
-        headers = ["Produit", "Unité", "Stock d'ouverture", "Quantité restante", "Vendu", "Montant théorique", "Bénéfice"]
+        headers = ["Produit", "Unité", "Stock d'ouverture", "Quantité vendue", "Quantité restante",
+                   "Montant théorique", "Bénéfice"]
         for c, text in enumerate(headers):
-            ttk.Label(inner, text=text, font=BOLD).grid(row=0, column=c, padx=8, pady=(0, 6), sticky="w" if c == 0 else "e")
+            ttk.Label(inner, text=text, font=BOLD).grid(
+                row=0, column=c, padx=8, pady=(0, 6), sticky="w" if c == 0 else "e")
         for r, line in enumerate(ss.build_sheet(self.conn, self.date_iso), start=1):
-            var = tk.StringVar(value="" if line["restant"] is None else fmt_qty(line["restant"]))
+            restant0 = line["restant"]
+            v_restant = tk.StringVar(value="" if restant0 is None else fmt_qty(restant0))
+            v_vendu = tk.StringVar(
+                value="" if restant0 is None else fmt_qty(round(line["ouverture"] - restant0, 6)))
             ttk.Label(inner, text=line["nom"]).grid(row=r, column=0, padx=8, sticky="w")
             ttk.Label(inner, text=line["unite"]).grid(row=r, column=1, padx=8, sticky="e")
             ttk.Label(inner, text=fmt_qty(line["ouverture"])).grid(row=r, column=2, padx=8, sticky="e")
-            entry = ttk.Entry(inner, textvariable=var, width=10, justify="right")
-            entry.grid(row=r, column=3, padx=8, pady=2)
-            lbl_v, lbl_m, lbl_b = (ttk.Label(inner, text="—") for _ in range(3))
-            lbl_v.grid(row=r, column=4, padx=8, sticky="e")
+            e_vendu = ttk.Entry(inner, textvariable=v_vendu, width=10, justify="right")
+            e_vendu.grid(row=r, column=3, padx=8, pady=2)
+            e_restant = ttk.Entry(inner, textvariable=v_restant, width=10, justify="right")
+            e_restant.grid(row=r, column=4, padx=8, pady=2)
+            lbl_m, lbl_b = ttk.Label(inner, text="—"), ttk.Label(inner, text="—")
             lbl_m.grid(row=r, column=5, padx=8, sticky="e")
             lbl_b.grid(row=r, column=6, padx=8, sticky="e")
+            row = {"line": line, "v_vendu": v_vendu, "v_restant": v_restant,
+                   "e_vendu": e_vendu, "e_restant": e_restant, "montant": lbl_m, "benef": lbl_b}
             index = len(self.rows)
-            entry.bind("<Return>", lambda e, i=index: self.focus_next(i))
-            var.trace_add("write", lambda *a: self.recalc())
-            self.rows.append({"line": line, "var": var, "entry": entry, "vendu": lbl_v, "montant": lbl_m, "benef": lbl_b})
+            e_vendu.bind("<Return>", lambda e, i=index: self.focus_next(i, "e_vendu"))
+            e_restant.bind("<Return>", lambda e, i=index: self.focus_next(i, "e_restant"))
+            v_vendu.trace_add("write", lambda *a, row=row: self.sync(row, "vendu"))
+            v_restant.trace_add("write", lambda *a, row=row: self.sync(row, "restant"))
+            self.rows.append(row)
 
         self.status.config(text="Modification d'une clôture existante" if closure else "Nouvelle clôture")
         self.v_encaisse.set("" if not closure or closure["montant_encaisse"] is None else str(closure["montant_encaisse"]))
@@ -96,32 +112,54 @@ class ClosureTab(ttk.Frame):
         self.btn.config(text="Enregistrer la modification" if closure else "Valider la clôture")
         self.recalc()
         if self.rows:
-            self.rows[0]["entry"].focus()
+            self.rows[0]["e_vendu"].focus()
 
-    def focus_next(self, index):
-        target = self.rows[index + 1]["entry"] if index + 1 < len(self.rows) else self.enc_entry
+    def sync(self, row, source):
+        """Quand une des deux quantités change, l'autre est recalculée à partir du stock d'ouverture."""
+        if self._syncing:
+            return
+        self._syncing = True
+        try:
+            if source == "vendu":
+                src, dst = row["v_vendu"], row["v_restant"]
+            else:
+                src, dst = row["v_restant"], row["v_vendu"]
+            text = src.get().strip()
+            if not text:
+                dst.set("")
+            else:
+                try:
+                    value = parse_quantity(text)
+                except ValueError:
+                    dst.set("")
+                else:
+                    dst.set(fmt_qty(round(row["line"]["ouverture"] - value, 6)))
+        finally:
+            self._syncing = False
+        self.recalc()
+
+    def focus_next(self, index, key):
+        target = self.rows[index + 1][key] if index + 1 < len(self.rows) else self.enc_entry
         target.focus()
 
     def recalc(self):
         total = benef_total = 0
         for row in self.rows:
-            line, text = row["line"], row["var"].get().strip()
+            line, text = row["line"], row["v_restant"].get().strip()
             try:
                 restant = parse_quantity(text) if text else line["ouverture"]
                 if restant > line["ouverture"]:
                     raise ValueError
             except ValueError:
-                row["vendu"].config(text="!")
-                row["montant"].config(text="—")
+                row["montant"].config(text="!")
                 row["benef"].config(text="—")
                 continue
-            vendu, montant, _, benef = ss.compute_line(line["ouverture"], restant, line["prix_achat"], line["prix_vente"])
-            row["vendu"].config(text=fmt_qty(vendu))
+            _, montant, _, benef = ss.compute_line(
+                line["ouverture"], restant, line["prix_achat"], line["prix_vente"])
             row["montant"].config(text=fmt_money(montant))
             row["benef"].config(text=fmt_money(benef))
             total += montant
             benef_total += benef
-        self._total = total
         self.v_total.set(fmt_money(total))
         self.v_benef.set(fmt_money(benef_total))
 
@@ -148,15 +186,25 @@ class ClosureTab(ttk.Frame):
     def save(self):
         restants, blanks = {}, 0
         for row in self.rows:
-            text = row["var"].get().strip()
+            line, text = row["line"], row["v_restant"].get().strip()
             if not text:
                 blanks += 1
                 continue
+            error = (f"« {line['nom']} » : quantité invalide. La quantité vendue doit être comprise "
+                     f"entre 0 et le stock d'ouverture ({fmt_qty(line['ouverture'])}).")
             try:
-                restants[row["line"]["produit_id"]] = parse_quantity(text)
-            except ValueError as exc:
-                messagebox.showerror("Erreur", f"« {row['line']['nom']} » : {exc}")
+                restant = parse_quantity(text)
+            except ValueError:
+                messagebox.showerror("Erreur", error)
                 return
+            if restant > line["ouverture"]:
+                messagebox.showerror("Erreur", error)
+                return
+            if not line["decimales"] and restant != int(restant):
+                messagebox.showerror(
+                    "Erreur", f"« {line['nom']} » : la quantité doit être un nombre entier pour cette unité.")
+                return
+            restants[line["produit_id"]] = restant
         text = self.v_encaisse.get().strip()
         try:
             encaisse = parse_amount(text) if text else None

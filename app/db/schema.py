@@ -122,13 +122,18 @@ INSERT INTO parametre (cle, valeur) VALUES
 MIGRATIONS = [MIGRATION_1]
 
 
-def init_db(db_path: Path | str | None = None) -> sqlite3.Connection:
-    """Crée ou met à jour la base, puis retourne une connexion prête à l'emploi."""
-    conn = get_connection(db_path)
+def migrate(conn: sqlite3.Connection) -> None:
+    """Applique les migrations manquantes sur une connexion ouverte."""
     version = conn.execute("PRAGMA user_version").fetchone()[0]
     for number, script in enumerate(MIGRATIONS, start=1):
         if number > version:
             conn.executescript(script)
             conn.execute(f"PRAGMA user_version = {number}")
             conn.commit()
+
+
+def init_db(db_path: Path | str | None = None) -> sqlite3.Connection:
+    """Crée ou met à jour la base, puis retourne une connexion prête à l'emploi."""
+    conn = get_connection(db_path)
+    migrate(conn)
     return conn

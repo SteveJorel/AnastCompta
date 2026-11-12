@@ -184,3 +184,11 @@ def declare_loss(conn, pid, quantite, note=""):
     add_movement(conn, pid, today_iso(), "PERTE", -quantite, new_stock, note=note)
     log_audit(conn, "PERTE", "produit", pid, f"-{quantite}")
     conn.commit()
+
+def check_stock_integrity(conn):
+    """Produits dont le stock ne correspond pas à la somme de leurs mouvements."""
+    return conn.execute(
+        "SELECT p.id, p.nom, p.quantite_stock AS stock, COALESCE(SUM(m.quantite), 0) AS somme "
+        "FROM produit p LEFT JOIN mouvement_stock m ON m.produit_id = p.id "
+        "GROUP BY p.id HAVING ABS(p.quantite_stock - COALESCE(SUM(m.quantite), 0)) > 0.0005"
+    ).fetchall()

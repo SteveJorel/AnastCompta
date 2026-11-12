@@ -1,8 +1,8 @@
 import os
+import sys
 from pathlib import Path
 
 APP_NAME = "AnastCompta"
-VERSION = "0.2.0"
 
 
 def get_data_dir() -> Path:
@@ -14,4 +14,12 @@ def get_data_dir() -> Path:
 
 
 def get_db_path() -> Path:
-    return get_data_dir() / "anastcompta.db"
+    override = os.environ.get("ANASTCOMPTA_DB")  # pour les tests sur une base de démonstration
+    return Path(override) if override else get_data_dir() / "anastcompta.db"
+
+
+def resource_path(relative: str) -> Path:
+    """Chemin d'une ressource embarquée (fonctionne en développement et dans le .exe)."""
+    base = getattr(sys, "_MEIPASS", None)
+    root = Path(base) if base else Path(__file__).resolve().parent.parent
+    return root / relative

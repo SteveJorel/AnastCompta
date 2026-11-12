@@ -5,6 +5,8 @@ from app.ui.dashboard_view import DashboardView
 from app.ui.income_view import IncomeView
 from app.ui.products_view import ProductsView
 from app.ui.sales_view import SalesView
+from app.ui.reports_view import ReportsView
+from app.ui.settings_view import SettingsView
 
 MENU = [
     ("dashboard", "Tableau de bord"),
@@ -51,9 +53,9 @@ class MainWindow(ttk.Frame):
             "products": lambda: ProductsView(self.content, conn),
             "sales": lambda: SalesView(self.content, conn),
             "income": lambda: IncomeView(self.content, conn),
-            "reports": lambda: PlaceholderView(self.content, "Bilans", "Disponible à l'étape 7."),
-            "settings": lambda: PlaceholderView(self.content, "Paramètres", "Disponible à l'étape 8."),
-        }
+            "reports": lambda: ReportsView(self.content, conn),
+            "settings": lambda: SettingsView(self.content, self.app),
+            }
         if self._current is not None:
             self._current.destroy()
         self.nav_var.set(key)

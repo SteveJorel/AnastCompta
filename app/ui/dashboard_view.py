@@ -1,6 +1,6 @@
 from tkinter import ttk
 
-from app.services import income_service, product_service, sales_service
+from app.services import income_service, product_service, sales_service, settings_service
 from app.utils.format import fmt_money, iso_to_fr, today_iso
 
 
@@ -8,13 +8,16 @@ class DashboardView(ttk.Frame):
     def __init__(self, parent, conn, navigate):
         super().__init__(parent, padding=30)
         today = today_iso()
+        devise = settings_service.get(conn, "devise", "FCFA")
         closure = sales_service.get_closure(conn, today)
         incomes = income_service.totals_by_category(conn, today, today)
         boutique = closure["total_theorique"] if closure else 0
         machine, bois = incomes.get("MACHINE", 0), incomes.get("BOIS", 0)
 
         ttk.Label(self, text="Tableau de bord", font=("Segoe UI", 18, "bold")).pack(anchor="w")
-        ttk.Label(self, text=f"Aujourd'hui : {iso_to_fr(today)}").pack(anchor="w", pady=(0, 20))
+        ttk.Label(
+            self, text=f"Aujourd'hui : {iso_to_fr(today)}   |   montants en {devise}"
+        ).pack(anchor="w", pady=(0, 20))
 
         cards = ttk.Frame(self)
         cards.pack(fill="x")

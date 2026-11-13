@@ -270,5 +270,5 @@ class DetailsDialog(Dialog):
             table.insert((l["nom"], fmt_qty(l["stock_ouverture"]), fmt_qty(l["stock_cloture"]),
                           fmt_qty(l["quantite_vendue"]), fmt_money(l["prix_vente_unit"]),
                           fmt_money(l["montant_theorique"]), fmt_money(l["benefice"])))
-        ttk.Button(self.body, text="Fermer", command=self.destroy).pack(pady=(10, 0))
+        ttk.Button(self.body, text="Fermer", style="Accent.TButton", command=self.destroy).pack(pady=(10, 0))
         self.show()

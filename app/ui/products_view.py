@@ -134,7 +134,7 @@ class ProductDialog(Dialog):
         ttk.Label(b, textvariable=self.v_marge, font=("Segoe UI", 11, "bold")).grid(
             row=6, column=0, columnspan=3, sticky="w", pady=(10, 0)
         )
-        ttk.Button(b, text="Enregistrer", command=self.submit).grid(row=7, column=0, columnspan=3, pady=(16, 0))
+        ttk.Button(b, text="Enregistrer",style="Accent.TButton", command=self.submit).grid(row=7, column=0, columnspan=3, pady=(16, 0))
 
         self.v_achat.trace_add("write", self.update_margin)
         self.v_vente.trace_add("write", self.update_margin)
@@ -219,7 +219,7 @@ class StockDialog(Dialog):
             self.price = labeled_entry(b, "Nouveau prix d'achat (optionnel)", row)
             row += 1
         self.note = labeled_entry(b, "Note (optionnel)", row)
-        ttk.Button(b, text="Valider", command=self.submit).grid(row=row + 1, column=0, columnspan=2, pady=(14, 0))
+        ttk.Button(b, text="Valider", style="Accent.TButton", command=self.submit).grid(row=row + 1, column=0, columnspan=2, pady=(14, 0))
         self.bind("<Return>", lambda e: self.submit())
         self.qty.focus()
         self.show()

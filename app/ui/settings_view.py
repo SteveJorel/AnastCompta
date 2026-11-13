@@ -35,7 +35,7 @@ class SettingsView(ttk.Frame):
         self.v_devise = tk.StringVar(value=settings_service.get(self.conn, "devise", "FCFA"))
         labeled_entry(box, "Nom de la boutique", 0, self.v_shop)
         labeled_entry(box, "Devise", 1, self.v_devise, width=10)
-        ttk.Button(box, text="Enregistrer", command=self.save_shop).grid(row=2, column=0, sticky="w", pady=(8, 0))
+        ttk.Button(box, text="Enregistrer",style="Accent.TButton", command=self.save_shop).grid(row=2, column=0, sticky="w", pady=(8, 0))
 
     def save_shop(self):
         try:
@@ -54,7 +54,7 @@ class SettingsView(ttk.Frame):
             ("Confirmer le nouveau", self.v_new2),
         ]):
             labeled_entry(box, label, row, var).config(show="•")
-        ttk.Button(box, text="Changer le mot de passe", command=self.change_password).grid(
+        ttk.Button(box, text="Changer le mot de passe",style="Accent.TButton", command=self.change_password).grid(
             row=3, column=0, sticky="w", pady=(8, 0))
 
     def change_password(self):

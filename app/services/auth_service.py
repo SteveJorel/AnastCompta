@@ -118,6 +118,19 @@ def reset_password_with_code(conn: sqlite3.Connection, code: str, new_password: 
     conn.commit()
     return new_code
 
+def force_reset_password(conn: sqlite3.Connection, new_password: str) -> str:
+    """Réinitialisation par le développeur, sans ancien mot de passe ni code. Retourne un NOUVEAU code."""
+    if get_user(conn) is None:
+        raise AuthError("Aucun compte à réinitialiser.")
+    validate_password(new_password)
+    salt = _new_salt()
+    code = generate_recovery_code()
+    conn.execute(
+        "UPDATE utilisateur SET mot_de_passe_hash = ?, sel = ?, code_recuperation_hash = ? WHERE id = 1",
+        (_hash(new_password, salt), salt, _make_code_hash(code)),
+    )
+    conn.commit()
+    return code
 
 class LoginThrottle:
     """Blocage de 30 s après 5 échecs de connexion consécutifs."""

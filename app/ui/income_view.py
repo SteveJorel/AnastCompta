@@ -32,7 +32,7 @@ class IncomeView(ttk.Frame):
         montant_entry.grid(row=1, column=2, padx=(0, 12))
         ttk.Label(form, text="Note (optionnel)").grid(row=0, column=3, sticky="w")
         ttk.Entry(form, textvariable=self.v_note, width=30).grid(row=1, column=3, padx=(0, 12))
-        self.submit_btn = ttk.Button(form, text="Ajouter", command=self.submit)
+        self.submit_btn = ttk.Button(form, text="Ajouter", style="Accent.TButton", command=self.submit)
         self.submit_btn.grid(row=1, column=4, padx=(0, 6))
         ttk.Button(form, text="Annuler", command=self.reset_form).grid(row=1, column=5)
         montant_entry.bind("<Return>", lambda e: self.submit())

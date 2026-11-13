@@ -1,9 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
 
+from app.ui import theme
+
 
 class SortableTree(ttk.Frame):
-    """Tableau avec défilement et tri par clic sur les en-têtes.
+    """Tableau avec défilement, lignes alternées et tri par clic sur les en-têtes.
     columns : liste de (id, titre, largeur, alignement)."""
 
     def __init__(self, parent, columns, **tree_opts):
@@ -14,21 +16,36 @@ class SortableTree(ttk.Frame):
         for cid, text, width, anchor in columns:
             self.tree.heading(cid, text=text, command=lambda c=cid: self.sort_by(c))
             self.tree.column(cid, width=width, anchor=anchor)
+        self.tree.tag_configure("odd", background=theme.SURFACE)
+        self.tree.tag_configure("even", background=theme.ROW_ALT)
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         self.tree.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
         self._reverse = {}
+        self._count = 0
 
     def clear(self):
         self.tree.delete(*self.tree.get_children())
+        self._count = 0
 
     def insert(self, values, iid=None, tags=()):
-        self.tree.insert("", "end", iid=iid, values=values, tags=tags)
+        stripe = "even" if self._count % 2 else "odd"
+        self._count += 1
+        self.tree.insert("", "end", iid=iid, values=values, tags=tuple(tags) + (stripe,))
 
     def selected(self):
         selection = self.tree.selection()
         return selection[0] if selection else None
+
+    def _restripe(self):
+        for index, iid in enumerate(self.tree.get_children("")):
+            current = self.tree.item(iid)["tags"]
+            if isinstance(current, str):
+                current = current.split()
+            tags = [t for t in current if t not in ("odd", "even")]
+            tags.append("even" if index % 2 else "odd")
+            self.tree.item(iid, tags=tags)
 
     def sort_by(self, col):
         items = [(self.tree.set(i, col), i) for i in self.tree.get_children("")]
@@ -45,6 +62,7 @@ class SortableTree(ttk.Frame):
         for index, (_, iid) in enumerate(items):
             self.tree.move(iid, "", index)
         self._reverse[col] = not reverse
+        self._restripe()
 
 
 class ScrollableFrame(ttk.Frame):
@@ -52,7 +70,7 @@ class ScrollableFrame(ttk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.canvas = tk.Canvas(self, highlightthickness=0)
+        self.canvas = tk.Canvas(self, highlightthickness=0, background=theme.BG)
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.inner = ttk.Frame(self.canvas)
         self.inner.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
@@ -81,6 +99,7 @@ class Dialog(tk.Toplevel):
     def __init__(self, parent, title):
         super().__init__(parent)
         self.title(title)
+        self.configure(background=theme.BG)
         self.transient(parent.winfo_toplevel())
         self.resizable(False, False)
         self.body = ttk.Frame(self, padding=20)

@@ -86,6 +86,16 @@ class TestAuth(unittest.TestCase):
         clock.now = 31
         self.assertEqual(throttle.remaining(), 0)
 
+    def test_reinitialisation_par_le_developpeur(self):
+        code_initial = self.creer()
+        code_apres_reset = auth.force_reset_password(self.conn, "reset123")
+        self.assertTrue(auth.authenticate(self.conn, "jean", "reset123"))
+        self.assertFalse(auth.authenticate(self.conn, "jean", "secret1"))
+        with self.assertRaises(auth.AuthError):  # l'ancien code ne marche plus
+            auth.reset_password_with_code(self.conn, code_initial, "autre123")
+        auth.reset_password_with_code(self.conn, code_apres_reset, "autre123")
+        with self.assertRaises(auth.AuthError):
+            auth.force_reset_password(self.conn, "123")
 
 if __name__ == "__main__":
     unittest.main()

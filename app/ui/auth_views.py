@@ -1,35 +1,43 @@
+import tkinter as tk
 from tkinter import ttk, messagebox
 
 from app.services import auth_service as auth
+from app.ui import theme
 
 
 class BaseView(ttk.Frame):
     def __init__(self, app):
-        super().__init__(app, padding=30)
+        super().__init__(app)
         self.app = app
+        self.card = tk.Frame(
+            self, bg=theme.SURFACE, highlightbackground=theme.BORDER, highlightthickness=1, padx=36, pady=28
+        )
+        self.card.place(relx=0.5, rely=0.5, anchor="center")
 
-    def add_title(self, text):
-        ttk.Label(self, text=text, font=("Segoe UI", 18, "bold")).pack(pady=(10, 20))
+    def add_title(self, text, subtitle=""):
+        ttk.Label(self.card, text="AnastCompta", style="Brand.TLabel").pack(anchor="w")
+        ttk.Label(self.card, text=text, style="CardHeading.TLabel").pack(anchor="w", pady=(4, 2))
+        if subtitle:
+            ttk.Label(self.card, text=subtitle, style="CardText.TLabel", wraplength=340, justify="left").pack(
+                anchor="w", pady=(0, 4))
 
     def field(self, label, secret=False):
-        ttk.Label(self, text=label).pack(anchor="w")
-        entry = ttk.Entry(self, show="•" if secret else "", width=34)
-        entry.pack(fill="x", pady=(2, 12))
+        ttk.Label(self.card, text=label, style="Card.TLabel").pack(anchor="w", pady=(10, 0))
+        entry = ttk.Entry(self.card, show="•" if secret else "", width=34)
+        entry.pack(fill="x", pady=(3, 0))
         return entry
 
 
 class CreateAccountView(BaseView):
     def __init__(self, app):
         super().__init__(app)
-        self.add_title("Créer votre compte")
-        ttk.Label(
-            self, text="Ce compte unique protège l'accès à vos données.", wraplength=360
-        ).pack(pady=(0, 15))
+        self.add_title("Créer votre compte", "Ce compte unique protège l'accès à vos données.")
         self.nom = self.field("Nom du responsable")
         self.user = self.field("Nom d'utilisateur")
         self.pwd = self.field("Mot de passe (6 caractères minimum)", secret=True)
         self.pwd2 = self.field("Confirmer le mot de passe", secret=True)
-        ttk.Button(self, text="Créer le compte", command=self.submit).pack(pady=10)
+        ttk.Button(self.card, text="Créer le compte", style="Accent.TButton", command=self.submit).pack(
+            fill="x", pady=(20, 0))
         self.pwd2.bind("<Return>", lambda e: self.submit())
         self.nom.focus()
 
@@ -50,14 +58,15 @@ class LoginView(BaseView):
     def __init__(self, app):
         super().__init__(app)
         self._locked = False
-        self.add_title("Connexion")
+        self.add_title("Connexion", "Entrez vos identifiants pour accéder à votre boutique.")
         self.user = self.field("Nom d'utilisateur")
         self.pwd = self.field("Mot de passe", secret=True)
-        self.msg = ttk.Label(self, text="", foreground="#b00020", wraplength=360)
-        self.msg.pack()
-        self.btn = ttk.Button(self, text="Se connecter", command=self.submit)
-        self.btn.pack(pady=10)
-        ttk.Button(self, text="Mot de passe oublié ?", command=app.show_recovery).pack()
+        self.msg = ttk.Label(self.card, text="", style="CardError.TLabel", wraplength=340)
+        self.msg.pack(anchor="w", pady=(8, 0))
+        self.btn = ttk.Button(self.card, text="Se connecter", style="Accent.TButton", command=self.submit)
+        self.btn.pack(fill="x", pady=(12, 0))
+        ttk.Button(self.card, text="Mot de passe oublié ?", style="Link.TButton", command=app.show_recovery).pack(
+            pady=(8, 0))
         self.pwd.bind("<Return>", lambda e: self.submit())
         self.user.focus()
         self.refresh_lock()
@@ -94,17 +103,13 @@ class LoginView(BaseView):
 class RecoveryView(BaseView):
     def __init__(self, app):
         super().__init__(app)
-        self.add_title("Mot de passe oublié")
-        ttk.Label(
-            self,
-            text="Saisissez le code de récupération remis à la création du compte.",
-            wraplength=360,
-        ).pack(pady=(0, 15))
+        self.add_title("Mot de passe oublié", "Saisissez le code de récupération remis à la création du compte.")
         self.code = self.field("Code de récupération")
         self.pwd = self.field("Nouveau mot de passe", secret=True)
         self.pwd2 = self.field("Confirmer le nouveau mot de passe", secret=True)
-        ttk.Button(self, text="Réinitialiser", command=self.submit).pack(pady=10)
-        ttk.Button(self, text="Retour", command=app.show_login).pack()
+        ttk.Button(self.card, text="Réinitialiser", style="Accent.TButton", command=self.submit).pack(
+            fill="x", pady=(20, 0))
+        ttk.Button(self.card, text="Retour", command=app.show_login).pack(fill="x", pady=(8, 0))
         self.code.focus()
 
     def submit(self):
@@ -118,14 +123,3 @@ class RecoveryView(BaseView):
             return
         self.app.show_recovery_code(new_code, renewed=True)
         self.app.show_login()
-
-
-class MainView(BaseView):
-    """Écran provisoire : sera remplacé par la vraie fenêtre principale aux étapes suivantes."""
-
-    def __init__(self, app):
-        super().__init__(app)
-        user = auth.get_user(app.conn)
-        self.add_title(f"Bienvenue, {user['nom_complet']}")
-        ttk.Label(self, text="Les modules arrivent dans les prochaines étapes.").pack(pady=10)
-        ttk.Button(self, text="Verrouiller", command=app.show_login).pack(pady=10)

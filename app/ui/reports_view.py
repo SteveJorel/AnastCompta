@@ -37,7 +37,7 @@ class ReportsView(ttk.Frame):
         entry.pack(side="left", padx=2)
         entry.bind("<Return>", lambda e: self.refresh())
         ttk.Button(bar, text="Suivant", command=lambda: self.shift(1)).pack(side="left", padx=2)
-        ttk.Button(bar, text="Afficher", command=self.refresh).pack(side="left", padx=(8, 0))
+        ttk.Button(bar, text="Afficher",style="Accent.TButton", command=self.refresh).pack(side="left", padx=(8, 0))
         ttk.Button(bar, text="Imprimer", command=self.print_report).pack(side="right")
         ttk.Button(bar, text="Exporter en CSV", command=self.export_csv).pack(side="right", padx=6)
         self.period_lbl = ttk.Label(self, font=BOLD)
@@ -48,7 +48,7 @@ class ReportsView(ttk.Frame):
         summary_tab = ttk.Frame(tabs, padding=10)
         self.kpi = ttk.Frame(summary_tab)
         self.kpi.pack(fill="x")
-        self.chart = tk.Canvas(summary_tab, height=260, highlightthickness=0)
+        self.chart = tk.Canvas(summary_tab, height=260, highlightthickness=0, bg="#ffffff")
         self.chart.pack(fill="both", expand=True, pady=(15, 0))
         self.chart.bind("<Configure>", lambda e: self.draw_chart())
 

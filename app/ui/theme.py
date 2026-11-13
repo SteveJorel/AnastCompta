@@ -38,7 +38,7 @@ def apply_theme(root):
     style.configure("CardHeading.TLabel", background=SURFACE, font=(FONT, 20, "bold"))
     style.configure("CardText.TLabel", background=SURFACE, foreground=MUTED)
     style.configure("CardError.TLabel", background=SURFACE, foreground=DANGER)
-    style.configure("Brand.TLabel", background=SURFACE, foreground=ACCENT, font=(FONT, 12, "bold"))
+    style.configure("Brand.TLabel", background=SURFACE, foreground=ACCENT, font=(FONT, 16, "bold"))
     style.configure("Sidebar.TLabel", background=SIDEBAR, foreground="#ffffff", font=(FONT, 16, "bold"))
     style.configure("SidebarMuted.TLabel", background=SIDEBAR, foreground="#94a3b8", font=(FONT, 10))
 

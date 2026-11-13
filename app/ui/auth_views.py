@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from app.services import auth_service as auth
-from app.ui import theme
+from app.ui import theme 
+from app.ui.logo import Logo 
 
 
 class BaseView(ttk.Frame):
@@ -15,11 +16,12 @@ class BaseView(ttk.Frame):
         self.card.place(relx=0.5, rely=0.5, anchor="center")
 
     def add_title(self, text, subtitle=""):
-        ttk.Label(self.card, text="AnastCompta", style="Brand.TLabel").pack(anchor="w")
-        ttk.Label(self.card, text=text, style="CardHeading.TLabel").pack(anchor="w", pady=(4, 2))
+        Logo(self.card, size=56).pack(pady=(0, 8))
+        ttk.Label(self.card, text="AnastCompta", style="Brand.TLabel").pack()
+        ttk.Label(self.card, text=text, style="CardHeading.TLabel").pack(pady=(10, 2))
         if subtitle:
-            ttk.Label(self.card, text=subtitle, style="CardText.TLabel", wraplength=340, justify="left").pack(
-                anchor="w", pady=(0, 4))
+            ttk.Label(self.card, text=subtitle, style="CardText.TLabel", wraplength=340,
+                      justify="center").pack(pady=(0, 4))
 
     def field(self, label, secret=False):
         ttk.Label(self.card, text=label, style="Card.TLabel").pack(anchor="w", pady=(10, 0))
